@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <!-- Matches the rose-600 CSS variable (#a33e65), the color of “A clearer day.” -->
+  <!-- The transparent center lets the flower work on every pink surface. -->
+  <defs>
+    <mask id="flower-center">
+      <rect width="48" height="48" fill="white" />
+      <circle cx="24" cy="24" r="7" fill="black" />
+    </mask>
+  </defs>
+  <g fill="#a33e65" mask="url(#flower-center)">
+    <circle cx="24" cy="12" r="10" />
+    <circle cx="35.4" cy="20.3" r="10" />
+    <circle cx="31.1" cy="33.7" r="10" />
+    <circle cx="16.9" cy="33.7" r="10" />
+    <circle cx="12.6" cy="20.3" r="10" />
+    <circle cx="24" cy="24" r="12" />
+  </g>
+</svg>
