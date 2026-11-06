@@ -1,4 +1,17 @@
 <!-- pag irrun "http://localhost/CodeXTDL/index.php"-->
+<?php
+session_start();
+
+// Initialize task storage
+if (!isset($_SESSION['tasks'])) {
+    $_SESSION['tasks'] = [];
+}
+
+// Initialize task ID counter
+if (!isset($_SESSION['next_id'])) {
+    $_SESSION['next_id'] = 1;
+}
+?>
 
 <!DOCTYPE html>
 <html lang="en">
