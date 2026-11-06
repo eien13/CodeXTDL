@@ -11,6 +11,81 @@ if (!isset($_SESSION['tasks'])) {
 if (!isset($_SESSION['next_id'])) {
     $_SESSION['next_id'] = 1;
 }
+// Handle form submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+    $action = $_POST['action'] ?? '';
+
+    if ($action === 'create') {
+
+        $taskText = trim($_POST['task'] ?? '');
+
+        if ($taskText !== '' && strlen($taskText) <= 120) {
+
+            $_SESSION['tasks'][] = [
+                'id' => $_SESSION['next_id'],
+                'text' => $taskText,
+                'completed' => false
+            ];
+
+            $_SESSION['next_id']++;
+        }
+    }
+
+    elseif ($action === 'update') {
+
+    $taskId = (int) ($_POST['task_id'] ?? 0);
+    $taskText = trim($_POST['task'] ?? '');
+
+    if ($taskId > 0 && $taskText !== '' && strlen($taskText) <= 120) {
+
+        foreach ($_SESSION['tasks'] as &$task) {
+
+            if ($task['id'] === $taskId) {
+                $task['text'] = $taskText;
+                break;
+            }
+        }
+
+        unset($task);
+    }
+}
+
+    elseif ($action === 'delete') {
+
+    $taskId = (int) ($_POST['task_id'] ?? 0);
+
+    foreach ($_SESSION['tasks'] as $index => $task) {
+
+        if ((int) $task['id'] === $taskId) {
+            unset($_SESSION['tasks'][$index]);
+            break;
+        }
+    }
+
+    // Re-index the task array
+    $_SESSION['tasks'] = array_values($_SESSION['tasks']);
+}
+
+    elseif ($action === 'toggle') {
+
+    $taskId = (int) ($_POST['task_id'] ?? 0);
+
+    foreach ($_SESSION['tasks'] as &$task) {
+
+        if ((int) $task['id'] === $taskId) {
+            $task['completed'] = !$task['completed'];
+            break;
+        }
+    }
+
+    unset($task);
+}
+
+
+    header('Location: ' . $_SERVER['PHP_SELF']);
+    exit();
+}
 ?>
 
 <!DOCTYPE html>
@@ -126,7 +201,26 @@ if (!isset($_SESSION['next_id'])) {
             </div>
           </div>
 
-          <ul id="task-list" class="task-list" aria-label="Tasks"></ul>
+          <ul id="task-list" class="task-list" aria-label="Tasks">
+
+    <?php foreach ($_SESSION['tasks'] as $task): ?>
+
+        <li class="task-row">
+            <input
+                type="checkbox"
+                class="task-check"
+                <?php echo $task['completed'] ? 'checked' : ''; ?>
+                disabled
+            />
+
+            <span class="task-text">
+                <?php echo htmlspecialchars($task['text'], ENT_QUOTES, 'UTF-8'); ?>
+            </span>
+        </li>
+
+    <?php endforeach; ?>
+
+</ul>
 
           <div id="empty-state" class="empty-state" hidden>
             <img class="empty-flower" src="asset/icon.svg" alt="" width="34" height="34" />
