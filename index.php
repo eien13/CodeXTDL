@@ -86,7 +86,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Location: ' . $_SERVER['PHP_SELF']);
     exit();
 }
+
+// Calculate task statistics
+$totalTasks = count($_SESSION['tasks']);
+
+$completedTasks = 0;
+
+foreach ($_SESSION['tasks'] as $task) {
+    if ($task['completed']) {
+        $completedTasks++;
+    }
+}
+
+$activeTasks = $totalTasks - $completedTasks;
+
+$progressPercent = $totalTasks > 0
+    ? round(($completedTasks / $totalTasks) * 100)
+    : 0;
 ?>
+
+
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -181,7 +201,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <div class="board-heading">
             <div>
               <span class="section-number">ONE THING AT A TIME</span>
-              <h2 id="list-title">My tasks <span id="total-badge" class="badge">4</span></h2>
+              <h2 id="list-title">My tasks <span id="total-badge" class="badge"><?php echo $totalTasks; ?></span></h2>
             </div>
 
             <img class="small-flower" src="asset/icon.svg" alt="" width="39" height="39" />
@@ -190,37 +210,92 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           <div class="list-toolbar">
             <div class="filters" role="group" aria-label="Filter tasks">
               <button type="button" data-filter="all" aria-pressed="true">
-                All <span id="all-count">4</span>
+                All <span id="all-count"><?php echo $totalTasks; ?></span>
               </button>
               <button type="button" data-filter="active" aria-pressed="false">
-                Active <span id="active-count">3</span>
+                Active <span id="active-count"><?php echo $activeTasks; ?></span>
               </button>
               <button type="button" data-filter="completed" aria-pressed="false">
-                Completed <span id="completed-count">1</span>
+                Completed <span id="completed-count"><?php echo $completedTasks; ?></span>
               </button>
             </div>
           </div>
 
-          <ul id="task-list" class="task-list" aria-label="Tasks">
+         <ul id="task-list" class="task-list" aria-label="Tasks">
 
-    <?php foreach ($_SESSION['tasks'] as $task): ?>
+                <?php foreach ($_SESSION['tasks'] as $task): ?>
 
-        <li class="task-row">
-            <input
-                type="checkbox"
-                class="task-check"
-                <?php echo $task['completed'] ? 'checked' : ''; ?>
-                disabled
-            />
+                <li class="task-row <?php echo $task['completed'] ? 'is-complete' : ''; ?>">
 
-            <span class="task-text">
-                <?php echo htmlspecialchars($task['text'], ENT_QUOTES, 'UTF-8'); ?>
-            </span>
-        </li>
+                    <!-- TOGGLE FORM -->
+                    <input
+                        type="checkbox"
+                        class="task-check"
+                        id="task-<?php echo $task['id']; ?>"
+                        <?php echo $task['completed'] ? 'checked' : ''; ?>
+                        form="toggle-form-<?php echo $task['id']; ?>"
+                        onchange="this.form.submit()"
+                        aria-label="Mark task as completed"
+                    />
 
-    <?php endforeach; ?>
+                    <form
+                        id="toggle-form-<?php echo $task['id']; ?>"
+                        method="POST"
+                        hidden
+                    >
+                        <input type="hidden" name="action" value="toggle">
+                        <input type="hidden" name="task_id" value="<?php echo $task['id']; ?>">
+                    </form>
 
-</ul>
+                    <!-- TASK TEXT -->
+                    <span class="task-text">
+                        <?php echo htmlspecialchars($task['text'], ENT_QUOTES, 'UTF-8'); ?>
+                    </span>
+
+                    <!-- TASK ACTIONS -->
+                    <div class="task-actions">
+
+                        <!-- EDIT BUTTON -->
+                        <button
+                            type="button"
+                            class="icon-button"
+                            data-action="edit"
+                            data-id="<?php echo $task['id']; ?>"
+                            data-text="<?php echo htmlspecialchars($task['text'], ENT_QUOTES, 'UTF-8'); ?>"
+                            aria-label="Edit task"
+                            title="Edit task"
+                        >
+                            <svg viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="m14 5 5 5M4 20l5-1L20 8a2 2 0 0 0-5-5L4 14z"/>
+                            </svg>
+                        </button>
+
+                        <!-- DELETE FORM -->
+                        <form method="POST" class="delete-form">
+
+                            <input type="hidden" name="action" value="delete">
+                            <input type="hidden" name="task_id" value="<?php echo $task['id']; ?>">
+
+                            <button
+                                type="submit"
+                                class="icon-button"
+                                aria-label="Delete task"
+                                title="Delete task"
+                            >
+                                <svg viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/>
+                                </svg>
+                            </button>
+
+                        </form>
+
+                    </div>
+
+                </li>
+
+            <?php endforeach; ?>
+
+        </ul>
 
           <div id="empty-state" class="empty-state" hidden>
             <img class="empty-flower" src="asset/icon.svg" alt="" width="34" height="34" />
@@ -230,7 +305,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
           </div>
 
           <div class="board-footer">
-            <span id="remaining-count">3 tasks left to do</span>
+            <span id="remaining-count">
+                <?php
+                    echo $activeTasks . ' ' .
+                        ($activeTasks === 1 ? 'task' : 'tasks') .
+                        ' left to do';
+                ?>
+            </span>
             <span>Little by little.</span>
           </div>
         </section>
@@ -242,15 +323,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         <div class="progress-copy">
           <h2>Your progress, at a glance</h2>
-          <p id="progress-caption">1 of 4 tasks completed. Keep going!</p>
+          <p id="progress-caption">
+                <?php echo $completedTasks; ?> of <?php echo $totalTasks; ?> tasks completed.
+                <?php echo $activeTasks > 0 ? 'Keep going!' : ($totalTasks > 0 ? 'Enjoy your little win!' : 'A fresh start. Add a task whenever you’re ready.'); ?>
+            </p>
+
         </div>
 
         <div class="progress-meter">
           <div class="progress-meta">
             <span>Today’s little wins</span>
-            <strong id="progress-percent">25%</strong>
+            <strong id="progress-percent"><?php echo $progressPercent; ?>%</strong>
           </div>
-          <progress id="progress-bar" value="1" max="4">25%</progress>
+
+            <progress
+                id="progress-bar"
+                value="<?php echo $completedTasks; ?>"
+                max="<?php echo $totalTasks > 0 ? $totalTasks : 1; ?>"
+            >
+                <?php echo $progressPercent; ?>%
+            </progress>
+
+
         </div>
       </section>
 
@@ -258,7 +352,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <p id="announcement" class="sr-only" role="status" aria-live="polite"></p>
 
       <noscript>
-        <p class="noscript">Enable JavaScript to try this UI preview. PHP processing has not been connected.</p>
+        <p class="noscript">Enable JavaScript to use task editing, filters, and completion toggles.</p>
       </noscript>
     </main>
 
